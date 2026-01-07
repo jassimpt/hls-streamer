@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Menu, X, Play } from 'lucide-react';
+import { Menu, X, Tv } from 'lucide-react';
 
 interface NavbarProps {
   onCategoryClick?: (category: string) => void;
@@ -28,13 +28,13 @@ const Navbar = ({ onCategoryClick }: NavbarProps) => {
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center gap-3 cursor-pointer"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center glow-effect">
-              <Play className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center glow-effect">
+              <Tv className="w-5 h-5 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="text-xl font-display font-bold gradient-text">StreamVault</span>
+            <span className="text-xl font-bold tracking-tight gradient-text">StreamVault</span>
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -46,7 +46,7 @@ const Navbar = ({ onCategoryClick }: NavbarProps) => {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="text-muted-foreground hover:text-foreground transition-colors relative group"
+                className="text-muted-foreground hover:text-foreground transition-colors relative group font-medium"
               >
                 {link}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300" />
@@ -78,7 +78,7 @@ const Navbar = ({ onCategoryClick }: NavbarProps) => {
               <button
                 key={link}
                 onClick={() => handleNavClick(link)}
-                className="block w-full text-left px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-lg transition-colors"
+                className="block w-full text-left px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-lg transition-colors font-medium"
               >
                 {link}
               </button>
