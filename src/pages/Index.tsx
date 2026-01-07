@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Instagram, Github, Linkedin, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import ChannelSection from '@/components/ChannelSection';
@@ -12,6 +12,7 @@ const Index = () => {
   const { channels, groupedChannels, isLoading, error } = useChannels();
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const handleChannelClick = (channel: Channel) => {
     setCurrentChannel(channel);
@@ -21,6 +22,13 @@ const Index = () => {
   const handlePlayFirst = () => {
     if (channels.length > 0) {
       handleChannelClick(channels[0]);
+    }
+  };
+
+  const handleCategoryClick = (category: string) => {
+    const ref = sectionRefs.current[category];
+    if (ref) {
+      ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -38,7 +46,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <Navbar onCategoryClick={handleCategoryClick} />
       
       {/* Hero Section */}
       <HeroSection onPlay={handlePlayFirst} channelCount={channels.length} />
@@ -67,6 +75,7 @@ const Index = () => {
               title={group}
               channels={groupChannels}
               onChannelClick={handleChannelClick}
+              sectionRef={(el: HTMLElement | null) => { sectionRefs.current[group] = el; }}
             />
           ))}
         </div>
@@ -74,10 +83,42 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="py-12 border-t border-border mt-12">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 text-center space-y-4">
           <p className="text-muted-foreground text-sm">
             © 2024 StreamVault. Streaming {channels.length} Malayalam channels.
           </p>
+          <div className="flex items-center justify-center gap-1 text-muted-foreground text-sm">
+            <span>Developed with</span>
+            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+            <span>by</span>
+            <span className="font-semibold text-foreground">Jassim PT</span>
+          </div>
+          <div className="flex items-center justify-center gap-4">
+            <a 
+              href="https://www.linkedin.com/in/jassimpt/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-primary"
+            >
+              <Linkedin className="w-5 h-5" />
+            </a>
+            <a 
+              href="https://github.com/jassimpt" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-primary"
+            >
+              <Github className="w-5 h-5" />
+            </a>
+            <a 
+              href="https://www.instagram.com/j4ssim.__?igsh=M2pvY2dnZDhkMW5y&utm_source=qr" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-primary"
+            >
+              <Instagram className="w-5 h-5" />
+            </a>
+          </div>
         </div>
       </footer>
 
