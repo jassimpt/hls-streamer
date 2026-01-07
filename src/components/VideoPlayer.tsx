@@ -183,12 +183,31 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
   }, [isMuted]);
 
   const toggleFullscreen = useCallback(() => {
-    if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen();
+    const video = videoRef.current;
+    const container = containerRef.current;
+    
+    // iOS Safari uses webkitEnterFullscreen on video element
+    if (video && (video as any).webkitEnterFullscreen) {
+      (video as any).webkitEnterFullscreen();
+      return;
+    }
+    
+    // Standard Fullscreen API
+    if (!container) return;
+    
+    if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if ((container as any).webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      }
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
       setIsFullscreen(false);
     }
   }, []);
@@ -208,14 +227,15 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
       ref={containerRef}
       className="relative w-full aspect-video bg-background rounded-xl overflow-hidden group"
       onMouseMove={handleMouseMove}
+      onTouchStart={() => setShowControls(true)}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
       <video
         ref={videoRef}
         className="w-full h-full object-cover"
         poster={poster}
-        onClick={handlePlayPause}
         playsInline
+        webkit-playsinline="true"
       />
 
       {/* Loading / Buffering Indicator */}
@@ -269,17 +289,21 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
       {/* Play Button Overlay */}
       <AnimatePresence mode="wait">
         {!isPlaying && !isLoading && !isBuffering && !error && (
-          <motion.button
+          <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
             onClick={handlePlayPause}
-            className="absolute inset-0 flex items-center justify-center"
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handlePlayPause();
+            }}
+            className="absolute inset-0 flex items-center justify-center cursor-pointer z-10"
           >
-            <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center glow-effect transition-transform hover:scale-110">
+            <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center glow-effect transition-transform hover:scale-110 active:scale-95">
               <Play className="w-8 h-8 text-primary-foreground ml-1" fill="currentColor" />
             </div>
-          </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -313,7 +337,12 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
               <div className="flex items-center gap-4">
                 <button
                   onClick={handlePlayPause}
-                  className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handlePlayPause();
+                  }}
+                  className="p-3 rounded-lg hover:bg-secondary/50 active:bg-secondary/70 transition-colors touch-manipulation"
                 >
                   {isPlaying ? (
                     <Pause className="w-6 h-6 text-foreground" />
@@ -354,7 +383,12 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleFullscreen}
-                  className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFullscreen();
+                  }}
+                  className="p-3 rounded-lg hover:bg-secondary/50 active:bg-secondary/70 transition-colors touch-manipulation"
                 >
                   {isFullscreen ? (
                     <Minimize className="w-5 h-5 text-foreground" />
