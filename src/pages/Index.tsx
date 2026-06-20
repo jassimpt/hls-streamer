@@ -162,6 +162,38 @@ const Index = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* World Cup Player Modal */}
+      <AnimatePresence>
+        {isWorldCupOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-6xl relative"
+            >
+              <button
+                onClick={() => setIsWorldCupOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-full glass-surface hover:bg-secondary transition-colors z-20"
+              >
+                <X className="w-6 h-6 text-foreground" />
+              </button>
+
+              <VideoPlayer
+                src="https://as.roomtu.store/rook1.m3u8"
+                title="FIFA World Cup 2026 — Live"
+                showQualitySelector
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
