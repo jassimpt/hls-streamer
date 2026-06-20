@@ -5,13 +5,17 @@ import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import ChannelSection from '@/components/ChannelSection';
 import VideoPlayer from '@/components/VideoPlayer';
+import WorldCupSection from '@/components/WorldCupSection';
 import { useChannels } from '@/hooks/useChannels';
 import { Channel } from '@/lib/m3u-parser';
+
+const WORLD_CUP_STREAM = 'https://as.roomtu.store/rook1.m3u8';
 
 const Index = () => {
   const { channels, groupedChannels, isLoading, error } = useChannels();
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
+  const [isWorldCupOpen, setIsWorldCupOpen] = useState(false);
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const handleChannelClick = (channel: Channel) => {
