@@ -5,13 +5,17 @@ import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import ChannelSection from '@/components/ChannelSection';
 import VideoPlayer from '@/components/VideoPlayer';
+import WorldCupSection from '@/components/WorldCupSection';
 import { useChannels } from '@/hooks/useChannels';
 import { Channel } from '@/lib/m3u-parser';
+
+const WORLD_CUP_STREAM = 'https://as.roomtu.store/rook1.m3u8';
 
 const Index = () => {
   const { channels, groupedChannels, isLoading, error } = useChannels();
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
+  const [isWorldCupOpen, setIsWorldCupOpen] = useState(false);
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const handleChannelClick = (channel: Channel) => {
@@ -50,6 +54,10 @@ const Index = () => {
       
       {/* Hero Section */}
       <HeroSection onPlay={handlePlayFirst} channelCount={channels.length} />
+
+      {/* World Cup Featured Section */}
+      <WorldCupSection onWatch={() => setIsWorldCupOpen(true)} />
+
 
       {/* Loading State */}
       {isLoading && (
@@ -149,6 +157,38 @@ const Index = () => {
                 src={currentChannel.url}
                 title={currentChannel.name}
                 poster={currentChannel.logo}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* World Cup Player Modal */}
+      <AnimatePresence>
+        {isWorldCupOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-6xl relative"
+            >
+              <button
+                onClick={() => setIsWorldCupOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-full glass-surface hover:bg-secondary transition-colors z-20"
+              >
+                <X className="w-6 h-6 text-foreground" />
+              </button>
+
+              <VideoPlayer
+                src="https://as.roomtu.store/rook1.m3u8"
+                title="FIFA World Cup 2026 — Live"
+                showQualitySelector
               />
             </motion.div>
           </motion.div>
