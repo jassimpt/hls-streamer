@@ -55,6 +55,10 @@ const Index = () => {
       {/* Hero Section */}
       <HeroSection onPlay={handlePlayFirst} channelCount={channels.length} />
 
+      {/* World Cup Featured Section */}
+      <WorldCupSection onWatch={() => setIsWorldCupOpen(true)} />
+
+
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
