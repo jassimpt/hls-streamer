@@ -10,16 +10,24 @@ import {
   Minimize,
   AlertTriangle,
   RefreshCw,
-  Radio
+  Radio,
+  Settings
 } from 'lucide-react';
 
 interface VideoPlayerProps {
   src: string;
   poster?: string;
   title?: string;
+  showQualitySelector?: boolean;
 }
 
-const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
+interface QualityLevel {
+  index: number;
+  height: number;
+  bitrate: number;
+}
+
+const VideoPlayer = ({ src, poster, title, showQualitySelector = false }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -31,9 +39,11 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const [levels, setLevels] = useState<QualityLevel[]>([]);
+  const [currentLevel, setCurrentLevel] = useState<number>(-1); // -1 = auto
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Convert HTTP to HTTPS for streams
   const getSecureUrl = (url: string): string => {
     if (url.startsWith('http://')) {
       return url.replace('http://', 'https://');
@@ -47,37 +57,40 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Reset states
     setIsLoading(true);
     setError(null);
     setIsPlaying(false);
     setIsBuffering(false);
+    setLevels([]);
+    setCurrentLevel(-1);
 
-    const initHls = (urlToTry: string, isRetry = false) => {
+    const initHls = () => {
       if (Hls.isSupported()) {
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
           maxBufferLength: 30,
           maxMaxBufferLength: 60,
+          backBufferLength: 30,
         });
         hlsRef.current = hls;
-        hls.loadSource(urlToTry);
+        hls.loadSource(secureUrl);
         hls.attachMedia(video);
         
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
           setIsLoading(false);
           setError(null);
+          const parsedLevels: QualityLevel[] = data.levels.map((lvl, i) => ({
+            index: i,
+            height: lvl.height || 0,
+            bitrate: lvl.bitrate || 0,
+          }));
+          setLevels(parsedLevels);
         });
         
         hls.on(Hls.Events.ERROR, (_, data) => {
           console.error('HLS Error:', data);
           if (data.fatal) {
-            // If HTTPS failed and we haven't tried original HTTP yet, try original
-            if (!isRetry && urlToTry !== src) {
-              console.log('HTTPS failed, this stream may not be available over secure connection');
-            }
-            
             setIsLoading(false);
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
@@ -98,9 +111,8 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
       return null;
     };
 
-    const hls = initHls(secureUrl);
+    const hls = initHls();
 
-    // For Safari native HLS support
     if (!Hls.isSupported() && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = secureUrl;
       video.addEventListener('loadedmetadata', () => setIsLoading(false));
@@ -182,17 +194,23 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
     }
   }, [isMuted]);
 
+  const handleQualityChange = useCallback((levelIndex: number) => {
+    if (hlsRef.current) {
+      hlsRef.current.currentLevel = levelIndex;
+      setCurrentLevel(levelIndex);
+      setShowQualityMenu(false);
+    }
+  }, []);
+
   const toggleFullscreen = useCallback(() => {
     const video = videoRef.current;
     const container = containerRef.current;
     
-    // iOS Safari uses webkitEnterFullscreen on video element
     if (video && (video as any).webkitEnterFullscreen) {
       (video as any).webkitEnterFullscreen();
       return;
     }
     
-    // Standard Fullscreen API
     if (!container) return;
     
     if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
@@ -222,6 +240,12 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
     }, 3000);
   }, [isPlaying]);
 
+  const currentQualityLabel = currentLevel === -1 
+    ? 'Auto' 
+    : levels[currentLevel]?.height 
+      ? `${levels[currentLevel].height}p` 
+      : 'Auto';
+
   return (
     <div 
       ref={containerRef}
@@ -238,7 +262,6 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
         webkit-playsinline="true"
       />
 
-      {/* Loading / Buffering Indicator */}
       <AnimatePresence mode="wait">
         {(isLoading || isBuffering) && !error && (
           <motion.div 
@@ -248,7 +271,6 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
             className="absolute inset-0 flex items-center justify-center bg-background/80"
           >
             <div className="flex flex-col items-center gap-4">
-              {/* Animated Loading Ring */}
               <div className="relative">
                 <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
                 <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-primary rounded-full animate-spin" />
@@ -262,7 +284,6 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
         )}
       </AnimatePresence>
 
-      {/* Error State */}
       <AnimatePresence mode="wait">
         {error && (
           <motion.div 
@@ -286,7 +307,6 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
         )}
       </AnimatePresence>
 
-      {/* Play Button Overlay */}
       <AnimatePresence mode="wait">
         {!isPlaying && !isLoading && !isBuffering && !error && (
           <motion.div
@@ -307,7 +327,6 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
         )}
       </AnimatePresence>
 
-      {/* Controls */}
       <AnimatePresence mode="wait">
         {showControls && !error && (
           <motion.div
@@ -317,12 +336,10 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
             transition={{ duration: 0.2 }}
             className="absolute bottom-0 left-0 right-0 video-overlay pt-20 pb-4 px-4"
           >
-            {/* Title & Live Badge */}
             <div className="flex items-center gap-3 mb-4">
               {title && (
                 <h3 className="text-foreground font-display font-semibold text-lg">{title}</h3>
               )}
-              {/* Animated Live Indicator */}
               <div className="flex items-center gap-2 px-3 py-1 bg-red-500/90 rounded-full">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -332,7 +349,6 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
               </div>
             </div>
 
-            {/* Control Buttons */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
@@ -373,14 +389,58 @@ const VideoPlayer = ({ src, poster, title }: VideoPlayerProps) => {
                   />
                 </div>
 
-                {/* Live streaming indicator */}
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
                   <Radio className="w-4 h-4 text-red-500" />
                   <span className="text-sm">Streaming Live</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
+                {showQualitySelector && levels.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowQualityMenu(!showQualityMenu)}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowQualityMenu(!showQualityMenu);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-secondary/50 active:bg-secondary/70 transition-colors touch-manipulation"
+                    >
+                      <Settings className="w-4 h-4 text-foreground" />
+                      <span className="text-xs font-semibold text-foreground">{currentQualityLabel}</span>
+                    </button>
+                    <AnimatePresence>
+                      {showQualityMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute bottom-full right-0 mb-2 min-w-[140px] bg-background/95 backdrop-blur-md border border-border rounded-lg overflow-hidden shadow-xl"
+                        >
+                          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border">
+                            Quality
+                          </div>
+                          <button
+                            onClick={() => handleQualityChange(-1)}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-secondary/50 transition-colors ${currentLevel === -1 ? 'text-primary font-semibold' : 'text-foreground'}`}
+                          >
+                            Auto
+                          </button>
+                          {[...levels].reverse().map((lvl) => (
+                            <button
+                              key={lvl.index}
+                              onClick={() => handleQualityChange(lvl.index)}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-secondary/50 transition-colors ${currentLevel === lvl.index ? 'text-primary font-semibold' : 'text-foreground'}`}
+                            >
+                              {lvl.height > 0 ? `${lvl.height}p` : `${Math.round(lvl.bitrate / 1000)} kbps`}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
                 <button
                   onClick={toggleFullscreen}
                   onTouchEnd={(e) => {
