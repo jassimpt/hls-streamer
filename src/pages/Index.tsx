@@ -52,11 +52,12 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar onCategoryClick={handleCategoryClick} />
       
+      {/* World Cup Featured Section - Top Priority */}
+      <WorldCupSection onWatch={() => setIsWorldCupOpen(true)} />
+
       {/* Hero Section */}
       <HeroSection onPlay={handlePlayFirst} channelCount={channels.length} />
 
-      {/* World Cup Featured Section */}
-      <WorldCupSection onWatch={() => setIsWorldCupOpen(true)} />
 
 
       {/* Loading State */}
